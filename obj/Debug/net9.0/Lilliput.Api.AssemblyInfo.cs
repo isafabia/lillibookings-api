@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Lilliput.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+77c2634fd01eeb0b1c37d62d8e4d1da6e650f0ab")]
 [assembly: System.Reflection.AssemblyProductAttribute("Lilliput.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Lilliput.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
