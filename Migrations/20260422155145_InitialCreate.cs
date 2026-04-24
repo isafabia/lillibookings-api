@@ -20,10 +20,12 @@ namespace Lilliput.Api.Migrations
                     Date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     StartTime = table.Column<string>(type: "text", nullable: false),
                     EndTime = table.Column<string>(type: "text", nullable: false),
-                    Activity = table.Column<string>(type: "text", nullable: false),
                     KidsCount = table.Column<int>(type: "integer", nullable: false),
                     TeachersCount = table.Column<int>(type: "integer", nullable: false),
-                    MedicalNotes = table.Column<string>(type: "text", nullable: false)
+                    MedicalNotes = table.Column<string>(type: "text", nullable: true),
+                    Status = table.Column<string>(type: "text", nullable: false),
+                    BookingType = table.Column<string>(type: "text", nullable: false),
+                    Nights = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -38,12 +40,12 @@ namespace Lilliput.Api.Migrations
                     Date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     StartTime = table.Column<string>(type: "text", nullable: false),
                     EndTime = table.Column<string>(type: "text", nullable: false),
-                    Type = table.Column<string>(type: "text", nullable: false),
+                    AssignmentType = table.Column<string>(type: "text", nullable: false),
                     Activity = table.Column<string>(type: "text", nullable: true),
                     GroupName = table.Column<string>(type: "text", nullable: true),
                     EmployeeId = table.Column<string>(type: "text", nullable: false),
                     EmployeeName = table.Column<string>(type: "text", nullable: false),
-                    BookingId = table.Column<Guid>(type: "uuid", nullable: true),
+                    BookingId = table.Column<string>(type: "text", nullable: true),
                     Status = table.Column<string>(type: "text", nullable: false),
                     ConfirmedWorked = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -62,7 +64,8 @@ namespace Lilliput.Api.Migrations
                     Name = table.Column<string>(type: "text", nullable: false),
                     Email = table.Column<string>(type: "text", nullable: false),
                     PasswordHash = table.Column<string>(type: "text", nullable: false),
-                    Role = table.Column<string>(type: "text", nullable: false)
+                    Role = table.Column<string>(type: "text", nullable: false),
+                    DayRate = table.Column<decimal>(type: "numeric", nullable: false)
                 },
                 constraints: table =>
                 {

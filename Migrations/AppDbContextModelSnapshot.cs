@@ -28,7 +28,7 @@ namespace Lilliput.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Activity")
+                    b.Property<string>("BookingType")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -47,10 +47,16 @@ namespace Lilliput.Api.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("MedicalNotes")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("Nights")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StartTime")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("StartTime")
+                    b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -71,8 +77,12 @@ namespace Lilliput.Api.Migrations
                     b.Property<string>("Activity")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("BookingId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("AssignmentType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BookingId")
+                        .HasColumnType("text");
 
                     b.Property<bool>("ConfirmedWorked")
                         .HasColumnType("boolean");
@@ -109,10 +119,6 @@ namespace Lilliput.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.HasKey("Id");
 
                     b.ToTable("RotaShifts");
@@ -123,6 +129,9 @@ namespace Lilliput.Api.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<decimal>("DayRate")
+                        .HasColumnType("numeric");
 
                     b.Property<string>("Email")
                         .IsRequired()

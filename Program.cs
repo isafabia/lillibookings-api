@@ -24,6 +24,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 var app = builder.Build();
 
+// create database if it does not exist
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+}
+
 // configure pipeline
 if (app.Environment.IsDevelopment())
 {
@@ -34,6 +41,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("AllowAngular");
 app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();
