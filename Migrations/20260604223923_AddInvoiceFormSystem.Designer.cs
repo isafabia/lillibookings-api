@@ -3,6 +3,7 @@ using System;
 using Lilliput.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Lilliput.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260604223923_AddInvoiceFormSystem")]
+    partial class AddInvoiceFormSystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -85,32 +88,8 @@ namespace Lilliput.Api.Migrations
                     b.Property<int>("ActualKidsCount")
                         .HasColumnType("integer");
 
-                    b.Property<string>("BankName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Bic")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<Guid?>("BookingId")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("CompanyAddress")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CompanyEmail")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CompanyName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CompanyPhone")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -127,10 +106,6 @@ namespace Lilliput.Api.Migrations
                     b.Property<decimal>("ExtraCharges")
                         .HasColumnType("numeric");
 
-                    b.Property<string>("Iban")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("InvoiceNumber")
                         .IsRequired()
                         .HasColumnType("text");
@@ -140,10 +115,6 @@ namespace Lilliput.Api.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Notes")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("PaymentReference")
                         .IsRequired()
                         .HasColumnType("text");
 

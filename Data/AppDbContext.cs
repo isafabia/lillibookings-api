@@ -12,4 +12,5 @@ public class AppDbContext : DbContext
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<User> Users => Set<User>();
     public DbSet<RotaShift> RotaShifts => Set<RotaShift>();
+    public DbSet<Invoice> Invoices => Set<Invoice>();
 }

@@ -4,11 +4,13 @@ using Lilliput.Api.Data;
 using Lilliput.Api.Models;
 using Lilliput.Api.DTOs;
 using System.Globalization;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Lilliput.Api.Controllers
 {
     [ApiController]
     [Route("api/rota")]
+    [Authorize]
     public class RotaController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -18,6 +20,7 @@ namespace Lilliput.Api.Controllers
             _context = context;
         }
 
+        // logged-in users can view rota shifts
         [HttpGet]
         public async Task<ActionResult<IEnumerable<RotaShift>>> GetAll()
         {
@@ -27,7 +30,9 @@ namespace Lilliput.Api.Controllers
                 .ToListAsync();
         }
 
+        // only admin can create shifts
         [HttpPost]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<RotaShift>> Create([FromBody] CreateRotaShiftDto dto)
         {
             try
@@ -92,6 +97,7 @@ namespace Lilliput.Api.Controllers
             }
         }
 
+        // logged-in users can update shift status
         [HttpPut("{id}/status")]
         public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateShiftStatusDto dto)
         {
@@ -101,14 +107,16 @@ namespace Lilliput.Api.Controllers
             if (shift == null)
                 return NotFound();
 
-            shift.Status = dto.Status;
+            var status = dto.Status.Trim().ToLower();
 
-            if (dto.Status == "accepted" || dto.Status == "declined" || dto.Status == "worked")
+            shift.Status = status;
+
+            if (status == "accepted" || status == "declined" || status == "worked")
             {
                 shift.RespondedAt = DateTime.UtcNow;
             }
 
-            if (dto.Status == "worked")
+            if (status == "worked")
             {
                 shift.ConfirmedWorked = true;
             }

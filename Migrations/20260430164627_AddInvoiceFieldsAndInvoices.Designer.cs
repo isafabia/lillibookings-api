@@ -3,6 +3,7 @@ using System;
 using Lilliput.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Lilliput.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260430164627_AddInvoiceFieldsAndInvoices")]
+    partial class AddInvoiceFieldsAndInvoices
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -82,82 +85,29 @@ namespace Lilliput.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int>("ActualKidsCount")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("BankName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Bic")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid?>("BookingId")
+                    b.Property<Guid>("BookingId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("CompanyAddress")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CompanyEmail")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CompanyName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CompanyPhone")
+                    b.Property<string>("BookingType")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("DateVisited")
+                    b.Property<DateTime?>("GeneratedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("Discount")
-                        .HasColumnType("numeric");
-
-                    b.Property<int>("ExpectedKidsCount")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("ExtraCharges")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("Iban")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<string>("InvoiceNumber")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("KidsCount")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Location")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<string>("Notes")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("PaymentReference")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("PdfFileName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("PdfUrl")
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("PricePerChild")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("PricePerTeacher")
-                        .HasColumnType("numeric");
 
                     b.Property<string>("SchoolEmail")
                         .IsRequired()
@@ -177,8 +127,8 @@ namespace Lilliput.Api.Migrations
                     b.Property<int>("TeachersCount")
                         .HasColumnType("integer");
 
-                    b.Property<decimal>("TotalAmount")
-                        .HasColumnType("numeric");
+                    b.Property<DateTime>("VisitDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 

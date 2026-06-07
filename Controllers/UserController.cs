@@ -3,21 +3,30 @@ using Microsoft.EntityFrameworkCore;
 using Lilliput.Api.Data;
 using Lilliput.Api.Models;
 using Lilliput.Api.Dtos;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace Lilliput.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class UsersController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly IConfiguration _configuration;
 
-    public UsersController(AppDbContext context)
+    public UsersController(AppDbContext context, IConfiguration configuration)
     {
         _context = context;
+        _configuration = configuration;
     }
 
     [HttpGet]
+    [Authorize(Roles = "admin")]
     public async Task<ActionResult<IEnumerable<LoginResponse>>> GetUsers()
     {
         var users = await _context.Users
@@ -36,6 +45,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpDelete("clear")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> ClearUsers()
     {
         var users = await _context.Users.ToListAsync();
@@ -46,6 +56,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("seed")]
+    [AllowAnonymous]
     public async Task<IActionResult> SeedUsers()
     {
         if (await _context.Users.AnyAsync())
@@ -90,8 +101,9 @@ public class UsersController : ControllerBase
         return Ok("users seeded");
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
-    public async Task<ActionResult<LoginResponse>> Login(LoginRequest request)
+    public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
     {
         var email = request.Email.Trim().ToLower();
 
@@ -111,8 +123,33 @@ public class UsersController : ControllerBase
             return Unauthorized("invalid email or password");
         }
 
-        return Ok(new LoginResponse
+        var claims = new List<Claim>
         {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.Name),
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Role, user.Role)
+        };
+
+        var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!)
+        );
+
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: _configuration["Jwt:Issuer"],
+            audience: _configuration["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.AddHours(8),
+            signingCredentials: creds
+        );
+
+        var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+
+        return Ok(new AuthResponse
+        {
+            Token = tokenString,
             Id = user.Id.ToString(),
             Name = user.Name,
             Email = user.Email,
@@ -122,6 +159,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "admin")]
     public async Task<ActionResult<LoginResponse>> CreateUser([FromBody] CreateUserRequest request)
     {
         var email = request.Email.Trim().ToLower();
