@@ -29,9 +29,13 @@ builder.Services.AddSwaggerGen();
 
 // database
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    ));
+{
+    var connectionString =
+        builder.Configuration["DATABASE_URL"]
+        ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
+    options.UseNpgsql(connectionString);
+});
 
 // jwt
 var jwtKey = builder.Configuration["Jwt:Key"];
@@ -71,7 +75,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// cors BEFORE auth
+// cors
 app.UseCors("AllowAngular");
 
 // auth
