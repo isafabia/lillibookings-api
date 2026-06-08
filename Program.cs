@@ -11,7 +11,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
-        policy.WithOrigins("http://localhost:4200", "http://localhost:8080")
+        policy.WithOrigins("http://localhost:4200", "http://localhost:8080", "https://lillibookings.netfly.app")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -67,11 +67,11 @@ using (var scope = app.Services.CreateScope())
 }
 
 // configure pipeline
-if (app.Environment.IsDevelopment())
-{
+
+
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+
 
 app.UseHttpsRedirection();
 
