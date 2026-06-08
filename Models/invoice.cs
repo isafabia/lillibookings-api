@@ -43,5 +43,4 @@ public string CompanyPhone { get; set; } = string.Empty;
 public string BankName { get; set; } = string.Empty;
 public string Iban { get; set; } = string.Empty;
 public string Bic { get; set; } = string.Empty;
-public string PaymentReference { get; set; } = string.Empty;
-}
+public string PaymentReference { get; set; } = string.Empty;}
