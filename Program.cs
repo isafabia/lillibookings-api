@@ -7,31 +7,38 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// cors
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
-        policy.WithOrigins("http://localhost:4200", "http://localhost:8080", "https://lillibookings.onrender.com")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        policy.WithOrigins(
+                "http://localhost:4200",
+                "http://localhost:8080",
+                "https://lillibookings.onrender.com"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
 });
 
-// add services
+// services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // database
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+    ));
 
-// jwt auth
+// jwt
 var jwtKey = builder.Configuration["Jwt:Key"];
 
 if (string.IsNullOrWhiteSpace(jwtKey))
 {
-    throw new Exception("jwt key is missing in appsettings.json");
+    throw new Exception("jwt key is missing");
 }
 
 builder.Services
@@ -60,26 +67,21 @@ builder.Services.AddScoped<InvoiceEmailService>();
 
 var app = builder.Build();
 
-// create database if it does not exist
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-}
+// swagger
+app.UseSwagger();
+app.UseSwaggerUI();
 
-// configure pipeline
-
-
-    app.UseSwagger();
-    app.UseSwaggerUI();
-
-
-app.UseHttpsRedirection();
-
+// cors BEFORE auth
 app.UseCors("AllowAngular");
 
+// auth
 app.UseAuthentication();
 app.UseAuthorization();
 
+// controllers
 app.MapControllers();
+
+// test route
+app.MapGet("/", () => "api is running");
 
 app.Run();
