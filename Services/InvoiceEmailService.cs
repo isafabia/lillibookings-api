@@ -9,11 +9,16 @@ public class InvoiceEmailService
 {
     private readonly IConfiguration _configuration;
     private readonly InvoicePdfService _pdfService;
+    private readonly ILogger<InvoiceEmailService> _logger;
 
-    public InvoiceEmailService(IConfiguration configuration, InvoicePdfService pdfService)
+    public InvoiceEmailService(
+        IConfiguration configuration,
+        InvoicePdfService pdfService,
+        ILogger<InvoiceEmailService> logger)
     {
         _configuration = configuration;
         _pdfService = pdfService;
+        _logger = logger;
     }
 
     public async Task SendInvoiceEmailAsync(Invoice invoice)
@@ -26,6 +31,15 @@ public class InvoiceEmailService
 
         if (string.IsNullOrWhiteSpace(invoice.SchoolEmail))
             throw new Exception("school email is missing");
+
+        if (string.IsNullOrWhiteSpace(fromEmail))
+            throw new Exception("from email is missing");
+
+        if (string.IsNullOrWhiteSpace(smtpUsername))
+            throw new Exception("smtp username is missing");
+
+        if (string.IsNullOrWhiteSpace(smtpPassword))
+            throw new Exception("smtp password is missing");
 
         var pdfBytes = _pdfService.GenerateInvoicePdf(invoice);
 
@@ -49,20 +63,15 @@ Kind regards,
 Lilliput Adventure Centre"
         };
 
-        body.Attachments.Add($"{invoice.InvoiceNumber}.pdf", pdfBytes, ContentType.Parse("application/pdf"));
+        body.Attachments.Add(
+            $"{invoice.InvoiceNumber}.pdf",
+            pdfBytes,
+            ContentType.Parse("application/pdf")
+        );
+
         message.Body = body.ToMessageBody();
 
         try
-        {
-            using var client = new SmtpClient();
-            client.Timeout = 60000;
-
-            await client.ConnectAsync(smtpHost, 465, SecureSocketOptions.SslOnConnect);
-            await client.AuthenticateAsync(smtpUsername, smtpPassword);
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
-        }
-        catch
         {
             using var client = new SmtpClient();
             client.Timeout = 60000;
@@ -71,6 +80,13 @@ Lilliput Adventure Centre"
             await client.AuthenticateAsync(smtpUsername, smtpPassword);
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
+
+            _logger.LogInformation("invoice email sent successfully to {Email}", invoice.SchoolEmail);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "failed to send invoice email");
+            throw;
         }
     }
 }
