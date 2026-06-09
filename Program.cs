@@ -63,7 +63,7 @@ builder.Services
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<InvoicePdfService>();
-builder.Services.AddScoped<InvoiceEmailService>();
+builder.Services.AddHttpClient<InvoiceEmailService>();
 
 var app = builder.Build();
 

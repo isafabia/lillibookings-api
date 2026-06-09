@@ -1,7 +1,7 @@
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using Lilliput.Api.Models;
-using MailKit.Net.Smtp;
-using MailKit.Security;
-using MimeKit;
 
 namespace Lilliput.Api.Services;
 
@@ -9,50 +9,41 @@ public class InvoiceEmailService
 {
     private readonly IConfiguration _configuration;
     private readonly InvoicePdfService _pdfService;
-    private readonly ILogger<InvoiceEmailService> _logger;
+    private readonly HttpClient _httpClient;
 
     public InvoiceEmailService(
         IConfiguration configuration,
         InvoicePdfService pdfService,
-        ILogger<InvoiceEmailService> logger)
+        HttpClient httpClient)
     {
         _configuration = configuration;
         _pdfService = pdfService;
-        _logger = logger;
+        _httpClient = httpClient;
     }
 
     public async Task SendInvoiceEmailAsync(Invoice invoice)
     {
-        var fromName = _configuration["Email:FromName"] ?? "Lilliput Adventure Centre";
-        var fromEmail = _configuration["Email:FromEmail"] ?? "";
-        var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
-        var smtpUsername = _configuration["Email:SmtpUsername"] ?? "";
-        var smtpPassword = _configuration["Email:SmtpPassword"] ?? "";
-        var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "465");
+        var apiKey = _configuration["Resend:ApiKey"] ?? "";
+        var fromEmail = _configuration["Resend:FromEmail"] ?? "onboarding@resend.dev";
+        var fromName = _configuration["Resend:FromName"] ?? "Lilliput Adventure Centre";
+        var replyToEmail = _configuration["Resend:ReplyToEmail"] ?? fromEmail;
+
+        if (string.IsNullOrWhiteSpace(apiKey))
+            throw new Exception("resend api key is missing");
 
         if (string.IsNullOrWhiteSpace(invoice.SchoolEmail))
             throw new Exception("school email is missing");
 
-        if (string.IsNullOrWhiteSpace(fromEmail))
-            throw new Exception("from email is missing");
-
-        if (string.IsNullOrWhiteSpace(smtpUsername))
-            throw new Exception("smtp username is missing");
-
-        if (string.IsNullOrWhiteSpace(smtpPassword))
-            throw new Exception("smtp password is missing");
-
         var pdfBytes = _pdfService.GenerateInvoicePdf(invoice);
+        var pdfBase64 = Convert.ToBase64String(pdfBytes);
 
-        var message = new MimeMessage();
-
-        message.From.Add(new MailboxAddress(fromName, fromEmail));
-        message.To.Add(MailboxAddress.Parse(invoice.SchoolEmail));
-        message.Subject = $"Invoice {invoice.InvoiceNumber} - Lilliput Adventure Centre";
-
-        var body = new BodyBuilder
+        var payload = new
         {
-            TextBody =
+            from = $"{fromName} <{fromEmail}>",
+            reply_to = replyToEmail,
+            to = new[] { invoice.SchoolEmail },
+            subject = $"Invoice {invoice.InvoiceNumber} - Lilliput Adventure Centre",
+            text =
 $@"Hello,
 
 Please find attached invoice {invoice.InvoiceNumber}.
@@ -62,37 +53,33 @@ Total due: €{invoice.TotalAmount:0.00}
 Payment reference: {invoice.PaymentReference}
 
 Kind regards,
-Lilliput Adventure Centre"
+Lilliput Adventure Centre",
+            attachments = new[]
+            {
+                new
+                {
+                    filename = $"{invoice.InvoiceNumber}.pdf",
+                    content = pdfBase64
+                }
+            }
         };
 
-        body.Attachments.Add(
-            $"{invoice.InvoiceNumber}.pdf",
-            pdfBytes,
-            ContentType.Parse("application/pdf")
+        var json = JsonSerializer.Serialize(payload);
+
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            "https://api.resend.com/emails"
         );
 
-        message.Body = body.ToMessageBody();
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+        request.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        try
+        var response = await _httpClient.SendAsync(request);
+        var responseBody = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
         {
-            using var client = new SmtpClient();
-            client.Timeout = 60000;
-
-            var socketOption = smtpPort == 465
-                ? SecureSocketOptions.SslOnConnect
-                : SecureSocketOptions.StartTls;
-
-            await client.ConnectAsync(smtpHost, smtpPort, socketOption);
-            await client.AuthenticateAsync(smtpUsername, smtpPassword);
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
-
-            _logger.LogInformation("invoice email sent successfully to {Email}", invoice.SchoolEmail);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "failed to send invoice email");
-            throw;
+            throw new Exception($"resend failed: {response.StatusCode} - {responseBody}");
         }
     }
 }
