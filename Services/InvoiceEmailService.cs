@@ -28,6 +28,7 @@ public class InvoiceEmailService
         var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
         var smtpUsername = _configuration["Email:SmtpUsername"] ?? "";
         var smtpPassword = _configuration["Email:SmtpPassword"] ?? "";
+        var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "465");
 
         if (string.IsNullOrWhiteSpace(invoice.SchoolEmail))
             throw new Exception("school email is missing");
@@ -44,6 +45,7 @@ public class InvoiceEmailService
         var pdfBytes = _pdfService.GenerateInvoicePdf(invoice);
 
         var message = new MimeMessage();
+
         message.From.Add(new MailboxAddress(fromName, fromEmail));
         message.To.Add(MailboxAddress.Parse(invoice.SchoolEmail));
         message.Subject = $"Invoice {invoice.InvoiceNumber} - Lilliput Adventure Centre";
@@ -76,7 +78,11 @@ Lilliput Adventure Centre"
             using var client = new SmtpClient();
             client.Timeout = 60000;
 
-            await client.ConnectAsync(smtpHost, 587, SecureSocketOptions.StartTls);
+            var socketOption = smtpPort == 465
+                ? SecureSocketOptions.SslOnConnect
+                : SecureSocketOptions.StartTls;
+
+            await client.ConnectAsync(smtpHost, smtpPort, socketOption);
             await client.AuthenticateAsync(smtpUsername, smtpPassword);
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
