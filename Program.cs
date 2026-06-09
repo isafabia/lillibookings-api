@@ -29,13 +29,9 @@ builder.Services.AddSwaggerGen();
 
 // database
 builder.Services.AddDbContext<AppDbContext>(options =>
-{
-    var connectionString =
-        builder.Configuration["DATABASE_URL"]
-        ?? builder.Configuration.GetConnectionString("DefaultConnection");
-
-    options.UseNpgsql(connectionString);
-});
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+    ));
 
 // jwt
 var jwtKey = builder.Configuration["Jwt:Key"];
@@ -71,11 +67,17 @@ builder.Services.AddScoped<InvoiceEmailService>();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    dbContext.Database.Migrate();
+}
+
 // swagger
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// cors
+// cors BEFORE auth
 app.UseCors("AllowAngular");
 
 // auth
