@@ -10,9 +10,7 @@ public class InvoiceEmailService
     private readonly IConfiguration _configuration;
     private readonly InvoicePdfService _pdfService;
 
-    public InvoiceEmailService(
-        IConfiguration configuration,
-        InvoicePdfService pdfService)
+    public InvoiceEmailService(IConfiguration configuration, InvoicePdfService pdfService)
     {
         _configuration = configuration;
         _pdfService = pdfService;
@@ -22,18 +20,12 @@ public class InvoiceEmailService
     {
         var fromName = _configuration["Email:FromName"] ?? "Lilliput Adventure Centre";
         var fromEmail = _configuration["Email:FromEmail"] ?? "";
-        var smtpHost = _configuration["Email:SmtpHost"] ?? "";
-        var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
+        var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
         var smtpUsername = _configuration["Email:SmtpUsername"] ?? "";
         var smtpPassword = _configuration["Email:SmtpPassword"] ?? "";
 
-        if (string.IsNullOrWhiteSpace(fromEmail) ||
-            string.IsNullOrWhiteSpace(smtpHost) ||
-            string.IsNullOrWhiteSpace(smtpUsername) ||
-            string.IsNullOrWhiteSpace(smtpPassword))
-        {
-            throw new Exception("email settings are missing");
-        }
+        if (string.IsNullOrWhiteSpace(invoice.SchoolEmail))
+            throw new Exception("school email is missing");
 
         var pdfBytes = _pdfService.GenerateInvoicePdf(invoice);
 
@@ -42,12 +34,12 @@ public class InvoiceEmailService
         message.To.Add(MailboxAddress.Parse(invoice.SchoolEmail));
         message.Subject = $"Invoice {invoice.InvoiceNumber} - Lilliput Adventure Centre";
 
-        var builder = new BodyBuilder
+        var body = new BodyBuilder
         {
             TextBody =
 $@"Hello,
 
-Please find attached invoice {invoice.InvoiceNumber} for your recent visit to Lilliput Adventure Centre.
+Please find attached invoice {invoice.InvoiceNumber}.
 
 Total due: €{invoice.TotalAmount:0.00}
 
@@ -57,19 +49,28 @@ Kind regards,
 Lilliput Adventure Centre"
         };
 
-        builder.Attachments.Add(
-            $"{invoice.InvoiceNumber}.pdf",
-            pdfBytes,
-            ContentType.Parse("application/pdf")
-        );
+        body.Attachments.Add($"{invoice.InvoiceNumber}.pdf", pdfBytes, ContentType.Parse("application/pdf"));
+        message.Body = body.ToMessageBody();
 
-        message.Body = builder.ToMessageBody();
+        try
+        {
+            using var client = new SmtpClient();
+            client.Timeout = 60000;
 
-        using var client = new SmtpClient();
+            await client.ConnectAsync(smtpHost, 465, SecureSocketOptions.SslOnConnect);
+            await client.AuthenticateAsync(smtpUsername, smtpPassword);
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
+        }
+        catch
+        {
+            using var client = new SmtpClient();
+            client.Timeout = 60000;
 
-        await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.SslOnConnect);
-        await client.AuthenticateAsync(smtpUsername, smtpPassword);
-        await client.SendAsync(message);
-        await client.DisconnectAsync(true);
+            await client.ConnectAsync(smtpHost, 587, SecureSocketOptions.StartTls);
+            await client.AuthenticateAsync(smtpUsername, smtpPassword);
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
+        }
     }
 }
