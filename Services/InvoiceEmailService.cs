@@ -76,7 +76,7 @@ Lilliput Adventure Centre"
         using var client = new SmtpClient();
         client.Timeout = 60000;
 
-        var socketOption = smtpPort == 465
+        var socketOption = smtpPort == 587
             ? SecureSocketOptions.SslOnConnect
             : SecureSocketOptions.StartTls;
 
