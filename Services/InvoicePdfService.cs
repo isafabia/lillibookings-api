@@ -222,9 +222,9 @@ public class InvoicePdfService
                     .Bold()
                     .FontColor(Accent);
 
-                column.Item().Text($"Bank: {Fallback(invoice.BankName, "to be confirmed")}");
-                column.Item().Text($"IBAN: {Fallback(invoice.Iban, "to be confirmed")}");
-                column.Item().Text($"BIC: {Fallback(invoice.Bic, "to be confirmed")}");
+                column.Item().Text($"Bank: {Fallback(invoice.BankName, "Lilliput Adventure Centre")}");
+                column.Item().Text($"IBAN: {Fallback(invoice.Iban, "IE13IPBS99073340393611")}");
+                column.Item().Text($"BIC: {Fallback(invoice.Bic, "IPBSIE2D")}");
                 column.Item().Text($"Reference: {Fallback(invoice.PaymentReference, invoice.InvoiceNumber)}")
                     .Bold();
             });
