@@ -64,6 +64,7 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<InvoicePdfService>();
 builder.Services.AddScoped<InvoiceEmailService>();
+builder.Services.AddScoped<NotificationEmailService>();
 
 var app = builder.Build();
 

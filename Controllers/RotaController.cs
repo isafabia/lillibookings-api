@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Lilliput.Api.Data;
 using Lilliput.Api.Models;
 using Lilliput.Api.DTOs;
+using Lilliput.Api.Services;
 using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 
@@ -14,13 +15,16 @@ namespace Lilliput.Api.Controllers
     public class RotaController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly NotificationEmailService _notificationEmailService;
 
-        public RotaController(AppDbContext context)
+        public RotaController(
+            AppDbContext context,
+            NotificationEmailService notificationEmailService)
         {
             _context = context;
+            _notificationEmailService = notificationEmailService;
         }
 
-        // logged-in users can view rota shifts
         [HttpGet]
         public async Task<ActionResult<IEnumerable<RotaShift>>> GetAll()
         {
@@ -30,7 +34,6 @@ namespace Lilliput.Api.Controllers
                 .ToListAsync();
         }
 
-        // only admin can create shifts
         [HttpPost]
         [Authorize(Roles = "admin")]
         public async Task<ActionResult<RotaShift>> Create([FromBody] CreateRotaShiftDto dto)
@@ -56,34 +59,52 @@ namespace Lilliput.Api.Controllers
                     });
                 }
 
+                var employeeId = string.IsNullOrWhiteSpace(dto.EmployeeId)
+                    ? dto.EmployeeName.Trim().ToLower().Replace(" ", "-")
+                    : dto.EmployeeId.Trim().ToLower();
+
                 var shift = new RotaShift
                 {
                     Id = Guid.NewGuid(),
-                    EmployeeId = string.IsNullOrWhiteSpace(dto.EmployeeId)
-                        ? dto.EmployeeName.Trim().ToLower().Replace(" ", "-")
-                        : dto.EmployeeId.Trim().ToLower(),
-
+                    EmployeeId = employeeId,
                     EmployeeName = dto.EmployeeName.Trim(),
-
                     Date = DateTime.SpecifyKind(parsedDate.Date, DateTimeKind.Utc),
-
                     StartTime = dto.StartTime ?? string.Empty,
                     EndTime = dto.EndTime ?? string.Empty,
-
                     AssignmentType = dto.AssignmentType ?? string.Empty,
-
                     Activity = string.IsNullOrWhiteSpace(dto.Activity) ? null : dto.Activity.Trim(),
                     GroupName = string.IsNullOrWhiteSpace(dto.GroupName) ? null : dto.GroupName.Trim(),
                     BookingId = string.IsNullOrWhiteSpace(dto.BookingId) ? null : dto.BookingId.Trim(),
-
                     Status = string.IsNullOrWhiteSpace(dto.Status) ? "pending" : dto.Status.Trim().ToLower(),
                     ConfirmedWorked = dto.ConfirmedWorked,
-
                     CreatedAt = DateTime.UtcNow
                 };
 
                 _context.RotaShifts.Add(shift);
                 await _context.SaveChangesAsync();
+
+                try
+                {
+                    var employee = await _context.Users
+                        .FirstOrDefaultAsync(u => u.Id.ToString() == shift.EmployeeId);
+
+                    if (employee != null && !string.IsNullOrWhiteSpace(employee.Email))
+                    {
+                        await _notificationEmailService.SendShiftRequestEmailAsync(
+                            employee.Name,
+                            employee.Email,
+                            shift.Date.ToString("dd MMM yyyy"),
+                            shift.StartTime,
+                            shift.EndTime,
+                            shift.GroupName,
+                            shift.Activity
+                        );
+                    }
+                }
+                catch (Exception emailEx)
+                {
+                    Console.WriteLine($"shift email notification failed: {emailEx.Message}");
+                }
 
                 return Ok(shift);
             }
@@ -97,7 +118,6 @@ namespace Lilliput.Api.Controllers
             }
         }
 
-        // logged-in users can update shift status
         [HttpPut("{id}/status")]
         public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateShiftStatusDto dto)
         {
@@ -146,7 +166,11 @@ namespace Lilliput.Api.Controllers
                 return true;
             }
 
-            if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out parsedDate))
+            if (DateTime.TryParse(
+                value,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal,
+                out parsedDate))
             {
                 return true;
             }
