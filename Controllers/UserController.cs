@@ -49,10 +49,14 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> ClearUsers()
     {
         var users = await _context.Users.ToListAsync();
+
         _context.Users.RemoveRange(users);
         await _context.SaveChangesAsync();
 
-        return Ok("all users deleted");
+        return Ok(new
+        {
+            message = "all users deleted"
+        });
     }
 
     [HttpPost("seed")]
@@ -61,7 +65,10 @@ public class UsersController : ControllerBase
     {
         if (await _context.Users.AnyAsync())
         {
-            return BadRequest("users already exist");
+            return BadRequest(new
+            {
+                message = "users already exist"
+            });
         }
 
         var users = new List<User>
@@ -98,7 +105,10 @@ public class UsersController : ControllerBase
         _context.Users.AddRange(users);
         await _context.SaveChangesAsync();
 
-        return Ok("users seeded");
+        return Ok(new
+        {
+            message = "users seeded"
+        });
     }
 
     [AllowAnonymous]
@@ -113,14 +123,20 @@ public class UsersController : ControllerBase
 
         if (user == null)
         {
-            return Unauthorized("invalid email or password");
+            return Unauthorized(new
+            {
+                message = "invalid email or password"
+            });
         }
 
         var passwordOk = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
 
         if (!passwordOk)
         {
-            return Unauthorized("invalid email or password");
+            return Unauthorized(new
+            {
+                message = "invalid email or password"
+            });
         }
 
         var claims = new List<Claim>
@@ -162,28 +178,42 @@ public class UsersController : ControllerBase
     [Authorize(Roles = "admin")]
     public async Task<ActionResult<LoginResponse>> CreateUser([FromBody] CreateUserRequest request)
     {
+        var name = request.Name.Trim();
         var email = request.Email.Trim().ToLower();
 
-        if (string.IsNullOrWhiteSpace(request.Name))
+        if (string.IsNullOrWhiteSpace(name))
         {
-            return BadRequest("name is required");
+            return BadRequest(new
+            {
+                message = "name is required"
+            });
         }
 
         if (string.IsNullOrWhiteSpace(email))
         {
-            return BadRequest("email is required");
+            return BadRequest(new
+            {
+                message = "email is required"
+            });
         }
 
         if (string.IsNullOrWhiteSpace(request.Password))
         {
-            return BadRequest("password is required");
+            return BadRequest(new
+            {
+                message = "password is required"
+            });
         }
 
-        var existingUser = await _context.Users.AnyAsync(u => u.Email.ToLower() == email);
+        var existingUser = await _context.Users
+            .AnyAsync(u => u.Email.ToLower() == email);
 
         if (existingUser)
         {
-            return BadRequest("a user with this email already exists");
+            return BadRequest(new
+            {
+                message = "a user with this email already exists"
+            });
         }
 
         var role = string.IsNullOrWhiteSpace(request.Role)
@@ -193,7 +223,7 @@ public class UsersController : ControllerBase
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Name = request.Name.Trim(),
+            Name = name,
             Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Role = role,
@@ -210,6 +240,29 @@ public class UsersController : ControllerBase
             Email = user.Email,
             Role = user.Role,
             DayRate = user.DayRate
+        });
+    }
+
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "admin")]
+    public async Task<IActionResult> DeleteUser(Guid id)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+
+        if (user == null)
+        {
+            return NotFound(new
+            {
+                message = "user not found"
+            });
+        }
+
+        _context.Users.Remove(user);
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "user deleted successfully"
         });
     }
 }
