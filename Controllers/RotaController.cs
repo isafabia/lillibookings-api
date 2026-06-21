@@ -34,6 +34,55 @@ namespace Lilliput.Api.Controllers
                 .ToListAsync();
         }
 
+        [HttpGet("weekly-responses")]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> GetWeeklyResponses()
+        {
+            var today = DateTime.UtcNow.Date;
+
+            var diffToMonday = today.DayOfWeek == DayOfWeek.Sunday
+                ? -6
+                : DayOfWeek.Monday - today.DayOfWeek;
+
+            var monday = today.AddDays(diffToMonday);
+            var sunday = monday.AddDays(6);
+
+            var shifts = await _context.RotaShifts
+                .Where(s => s.Date.Date >= monday && s.Date.Date <= sunday)
+                .ToListAsync();
+
+            var pending = shifts
+                .Where(s => s.Status.ToLower() == "pending")
+                .Select(s => s.EmployeeName)
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .Distinct()
+                .OrderBy(n => n)
+                .ToList();
+
+            var accepted = shifts
+                .Where(s => s.Status.ToLower() == "accepted")
+                .Select(s => s.EmployeeName)
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .Distinct()
+                .OrderBy(n => n)
+                .ToList();
+
+            var declined = shifts
+                .Where(s => s.Status.ToLower() == "declined")
+                .Select(s => s.EmployeeName)
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .Distinct()
+                .OrderBy(n => n)
+                .ToList();
+
+            return Ok(new
+            {
+                pending,
+                accepted,
+                declined
+            });
+        }
+
         [HttpPost]
         [Authorize(Roles = "admin")]
         public async Task<ActionResult<RotaShift>> Create([FromBody] CreateRotaShiftDto dto)
